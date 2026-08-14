@@ -51,6 +51,8 @@ interface AppSidebarProps {
   setAdminActiveTab: (tab: any) => void;
   isAdminWorkspace: boolean;
   setIsAdminWorkspace: (val: boolean) => void;
+  isMobileMenuOpen?: boolean;
+  setIsMobileMenuOpen?: (val: boolean) => void;
 }
 
 export default function AppSidebar({
@@ -62,6 +64,8 @@ export default function AppSidebar({
   setAdminActiveTab,
   isAdminWorkspace,
   setIsAdminWorkspace,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
 }: AppSidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
 
@@ -97,13 +101,21 @@ export default function AppSidebar({
 
   const navigateTo = (screen: ActiveScreen) => {
     setActiveScreen(screen);
-    scrollContentToTop();
+    if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+    
+    setTimeout(() => {
+      scrollContentToTop();
+    }, 100);
   };
 
   const navigateToAdminTab = (tabId: string) => {
     setActiveScreen("admin");
     setAdminActiveTab(tabId);
-    scrollContentToTop();
+    if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+
+    setTimeout(() => {
+      scrollContentToTop();
+    }, 100);
   };
 
   // Default Fallback Navigation Items
@@ -175,7 +187,7 @@ export default function AppSidebar({
   const branding = configData?.branding || (configData as any)?.data?.branding;
 
   return (
-    <aside className="w-64 bg-[#111111] border-r border-[#242424] flex flex-col h-screen  shrink-0 z-20">
+    <aside className={`w-64 bg-[#111111] border-r border-[#242424] flex flex-col h-screen shrink-0 z-40 fixed md:relative top-0 left-0 transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
       {/* Brand Header */}
       <div className="p-4 border-b border-[#1F1F1F]">
         <div

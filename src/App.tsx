@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -11,6 +11,8 @@ import {
 } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import { incrementLoading, decrementLoading } from "./redux/slice/uiSlice";
 
 // Types & Hooks
 import { ActiveScreen } from "./types";
@@ -54,11 +56,18 @@ const AboutUsPage = React.lazy(() => import("./pages/FooterPages").then(m => ({ 
 const ContactUsPage = React.lazy(() => import("./pages/FooterPages").then(m => ({ default: m.ContactUsPage })));
 
 // Loading Fallback Component
-const PageLoader = () => (
-  <div className="flex-1 flex items-center justify-center min-h-[50vh] bg-transparent">
-    <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-  </div>
-);
+const PageLoader = () => {
+  const dispatch = useDispatch();
+  
+  useEffect(() => {
+    dispatch(incrementLoading());
+    return () => {
+      dispatch(decrementLoading());
+    };
+  }, [dispatch]);
+
+  return <div className="flex-1 flex items-center justify-center min-h-[50vh] bg-transparent" />;
+};
 
 // ------------------------------------------------------------------
 //  NAVIGATION HELPERS
@@ -189,6 +198,7 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
   
   const { currentUser, logout, refreshCredits } = useAuth();
   const goToScreen = useScreenNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -213,6 +223,14 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
       <div className="absolute top-0 left-0 w-96 h-96 bg-amber-500/[0.015] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="flex w-full h-screen overflow-hidden">
+        {/* Mobile Overlay Backdrop */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        
         <AppSidebar
           activeScreen={activeScreen}
           setActiveScreen={goToScreen}
@@ -222,6 +240,8 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
           setAdminActiveTab={(tab) => navigate(`/admin/${tab}`)}
           isAdminWorkspace={isAdminSection}
           setIsAdminWorkspace={(val) => navigate(val ? "/admin/overview" : "/app/dashboard")}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
 
         <div className="flex-1 flex flex-col h-full bg-[#090909] overflow-hidden">
@@ -230,9 +250,10 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
             setActiveScreen={goToScreen}
             currentUser={currentUser}
             onRefreshCredits={refreshCredits}
+            onToggleSidebar={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           />
 
-          <main className={`flex-1 ${activeScreen === "chat" ? "p-3 md:p-4 overflow-hidden flex flex-col h-full" : "p-6 md:p-8 overflow-y-auto"} custom-scrollbar relative`}>
+          <main className={`flex-1 ${activeScreen === "chat" ? "p-3 md:p-4 overflow-hidden flex flex-col h-full" : "p-4 md:p-6 lg:p-8 overflow-y-auto"} custom-scrollbar relative`}>
             <AnimatePresence mode="wait" initial={false}>
               {outlet && (
                 <motion.div
