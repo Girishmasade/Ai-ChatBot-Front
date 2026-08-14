@@ -16,7 +16,8 @@ export type ActiveScreen =
   | "terms"
   | "privacy"
   | "about"
-  | "contact";
+  | "contact"
+  | "socials";
 
 export interface User {
   id: string;
@@ -86,6 +87,9 @@ export interface BrandingConfig {
   primaryColor: string;
   accentGlow: string;
   footerText: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 // ─── Backend API Response Types ──────────────────────────────────────────────

@@ -158,7 +158,10 @@ export default function AdminPage({ activeTab, setActiveTab }: AdminPageProps) {
     appName: "GoChat AI",
     logoName: "GoChat AI",
     primaryColor: "#F59E0B",
-    footerText: ""
+    footerText: "",
+    seoTitle: "GoChat AI - Next-Gen Intelligence Workspace",
+    seoDescription: "The luxury standard for multi-modal intelligence workspace solutions.",
+    seoKeywords: "AI, Chat, Video Generation, Image Studio, GoChat"
   });
   
   const [brandingFiles, setBrandingFiles] = useState<{
@@ -271,7 +274,10 @@ export default function AdminPage({ activeTab, setActiveTab }: AdminPageProps) {
         appName: configData.branding.appName || "GoChat AI",
         logoName: configData.branding.logoName || "GoChat AI",
         primaryColor: configData.branding.primaryColor || "#F59E0B",
-        footerText: configData.branding.footerText || ""
+        footerText: configData.branding.footerText || "",
+        seoTitle: configData.branding.seoTitle || "GoChat AI - Next-Gen Intelligence Workspace",
+        seoDescription: configData.branding.seoDescription || "The luxury standard for multi-modal intelligence workspace solutions.",
+        seoKeywords: configData.branding.seoKeywords || "AI, Chat, Video Generation, Image Studio, GoChat"
       });
       setCookieConsents(configData.cookieConsents);
       const totalAcc = configData.cookieConsents.filter((c: any) => c.consented !== false).length;
@@ -396,6 +402,9 @@ export default function AdminPage({ activeTab, setActiveTab }: AdminPageProps) {
       formData.append("logoName", brandingForm.logoName);
       formData.append("primaryColor", brandingForm.primaryColor);
       formData.append("footerText", brandingForm.footerText);
+      formData.append("seoTitle", brandingForm.seoTitle);
+      formData.append("seoDescription", brandingForm.seoDescription);
+      formData.append("seoKeywords", brandingForm.seoKeywords);
 
       if (brandingFiles.mainLogo) formData.append("mainLogo", brandingFiles.mainLogo);
       if (brandingFiles.favicon) formData.append("favicon", brandingFiles.favicon);
@@ -1404,6 +1413,59 @@ export default function AdminPage({ activeTab, setActiveTab }: AdminPageProps) {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {activeTab === "seo" && (
+        <form onSubmit={handleSaveBranding} className="space-y-6 max-w-4xl">
+          <div className="flex justify-between items-start mb-6">
+            <div className="text-left">
+              <h2 className="text-2xl font-extrabold text-white">SEO Configuration</h2>
+              <p className="text-sm text-zinc-400 mt-1">Manage global Search Engine Optimization settings to maximize visibility.</p>
+            </div>
+            <button
+              type="submit"
+              className="px-5 py-2.5 text-xs font-bold text-black bg-amber-500 hover:bg-amber-400 rounded-lg transition flex items-center gap-1.5 shadow-lg shadow-amber-500/15 cursor-pointer"
+            >
+              <Save className="w-4 h-4" /> Save SEO Settings
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-[#161616] border border-[#242424] rounded-xl p-5 text-left">
+              <label className="block text-xs font-bold text-white mb-3">Global SEO Title</label>
+              <input
+                type="text"
+                value={brandingForm.seoTitle}
+                onChange={(e) => setBrandingForm({ ...brandingForm, seoTitle: e.target.value })}
+                className="w-full max-w-2xl bg-[#1E1E1E] border border-[#333] focus:border-[#555] focus:outline-none rounded-lg p-2.5 text-xs text-white"
+                placeholder="GoChat AI - Next-Gen Intelligence Workspace"
+              />
+              <p className="text-[10px] text-zinc-500 mt-2">This appears as the blue clickable link in search engine results.</p>
+            </div>
+
+            <div className="bg-[#161616] border border-[#242424] rounded-xl p-5 text-left">
+              <label className="block text-xs font-bold text-white mb-3">Global SEO Description</label>
+              <textarea
+                value={brandingForm.seoDescription}
+                onChange={(e) => setBrandingForm({ ...brandingForm, seoDescription: e.target.value })}
+                className="w-full max-w-2xl h-24 bg-[#1E1E1E] border border-[#333] focus:border-[#555] focus:outline-none rounded-lg p-2.5 text-xs text-white resize-none"
+                placeholder="The luxury standard for multi-modal intelligence workspace solutions."
+              />
+              <p className="text-[10px] text-zinc-500 mt-2">The short paragraph displayed under your title in search results. Keep under 160 characters.</p>
+            </div>
+
+            <div className="bg-[#161616] border border-[#242424] rounded-xl p-5 text-left">
+              <label className="block text-xs font-bold text-white mb-3">Global SEO Keywords</label>
+              <textarea
+                value={brandingForm.seoKeywords}
+                onChange={(e) => setBrandingForm({ ...brandingForm, seoKeywords: e.target.value })}
+                className="w-full max-w-2xl h-20 bg-[#1E1E1E] border border-[#333] focus:border-[#555] focus:outline-none rounded-lg p-2.5 text-xs text-white resize-none"
+                placeholder="AI, Chat, Video Generation, Image Studio, GoChat"
+              />
+              <p className="text-[10px] text-zinc-500 mt-2">Comma separated list of targeted keywords for search crawlers.</p>
             </div>
           </div>
         </form>

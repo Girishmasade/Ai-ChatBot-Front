@@ -145,6 +145,7 @@ export default function AppSidebar({
     { id: "menu", label: "Menu Control", icon: Sliders },
     { id: "footer", label: "Footer CMS", icon: FileText },
     { id: "branding", label: "Branding CMS", icon: Palette },
+    { id: "seo", label: "SEO Config", icon: Globe },
     { id: "cookies", label: "Cookie Ledger", icon: Fingerprint },
     { id: "audits", label: "Audit Records", icon: History },
     { id: "settings", label: "System Settings", icon: Settings }

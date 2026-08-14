@@ -164,16 +164,14 @@ export default function AppFooter({ setActiveScreen, activeScreen }: AppFooterPr
               {socialLinks.map((social) => {
                 const IconComp = PLATFORM_ICONS[social.platform] || Globe;
                 return (
-                  <a
+                  <button
                     key={social.id}
-                    href={social.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-10 h-10 rounded-lg bg-[#121214] border border-[#242429] flex items-center justify-center text-zinc-400 hover:text-white hover:border-[#F59E0B]/30 hover:bg-zinc-900 transition shrink-0"
+                    onClick={() => setActiveScreen("socials")}
+                    className="w-10 h-10 rounded-lg bg-[#121214] border border-[#242429] flex items-center justify-center text-zinc-400 hover:text-white hover:border-[#F59E0B]/30 hover:bg-zinc-900 transition shrink-0 cursor-pointer"
                     title={social.label}
                   >
                     <IconComp className="w-4 h-4" />
-                  </a>
+                  </button>
                 );
               })}
             </div>

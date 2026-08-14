@@ -3,6 +3,7 @@ import authReducer from "./slice/authSlice";
 import { apiSlice as mockApiSlice } from "./api/apiSlice";
 import { apiSlice as backendApiSlice } from "./backendApi/apiBackendConnectivity";
 import toast from "react-hot-toast";
+import uiReducer, { incrementLoading, decrementLoading } from "./slice/uiSlice";
 
 /**
  * Helper to extract the single, specific reason why an operation or validation failed.
@@ -70,10 +71,19 @@ export function extractDetailedErrorMessage(payload: any, status?: number | stri
 }
 
 /**
- * Global RTK Query error middleware.
- * Automatically displays a single, detailed error toast notification when any API call fails.
+ * Global RTK Query middleware.
+ * Automatically displays error toast on failures and manages global loading state.
  */
-export const rtkQueryErrorLogger: Middleware = () => (next) => (action: any) => {
+export const rtkQueryGlobalMiddleware: Middleware = ({ dispatch }) => (next) => (action: any) => {
+  // Track loading state for RTK Query endpoints
+  if (action.type && typeof action.type === "string") {
+    if (action.type.endsWith("/pending")) {
+      dispatch(incrementLoading());
+    } else if (action.type.endsWith("/fulfilled") || action.type.endsWith("/rejected")) {
+      dispatch(decrementLoading());
+    }
+  }
+
   if (isRejectedWithValue(action)) {
     const status = action.payload?.status;
     const endpointName = action.meta?.arg?.endpointName;
@@ -99,6 +109,7 @@ export const rtkQueryErrorLogger: Middleware = () => (next) => (action: any) => 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    ui: uiReducer,
     [mockApiSlice.reducerPath]: mockApiSlice.reducer,
     [backendApiSlice.reducerPath]: backendApiSlice.reducer,
   },
@@ -106,7 +117,7 @@ export const store = configureStore({
     getDefaultMiddleware()
       .concat(mockApiSlice.middleware)
       .concat(backendApiSlice.middleware)
-      .concat(rtkQueryErrorLogger),
+      .concat(rtkQueryGlobalMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

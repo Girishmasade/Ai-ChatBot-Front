@@ -57,6 +57,8 @@ export default function AppTopBar({
         return "About GoChat AI";
       case "contact":
         return "VIP Relations Concierge";
+      case "socials":
+        return "Social Network Matrix";
       default:
         return "Workspace";
     }

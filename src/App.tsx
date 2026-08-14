@@ -27,6 +27,7 @@ import AppSidebar from "./components/AppSidebar";
 import AppTopBar from "./components/AppTopBar";
 import CookieBanner from "./components/CookieBanner";
 import AppFooter from "./components/AppFooter";
+import GlobalLoader from "./components/GlobalLoader";
 
 // Lazy-loaded Main Pages
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -43,6 +44,7 @@ const UserSettingsPage = React.lazy(() => import("./pages/UserSettingsPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const AdminPage = React.lazy(() => import("./pages/AdminPage"));
 const AuthPage = React.lazy(() => import("./pages/AuthPage"));
+const SocialsPage = React.lazy(() => import("./pages/SocialsPage"));
 
 
 // Lazy-loaded Footer Pages (Handling Named Exports)
@@ -304,8 +306,28 @@ function BrandingSync() {
       }
       link.href = branding.favicon;
     }
-    if (branding?.appName || branding?.logoName) {
-      document.title = branding.appName || branding.logoName;
+    if (branding?.seoTitle || branding?.appName || branding?.logoName) {
+      document.title = branding.seoTitle || branding.appName || branding.logoName;
+    }
+
+    if (branding?.seoDescription) {
+      let metaDesc: HTMLMetaElement | null = document.querySelector("meta[name='description']");
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.name = "description";
+        document.getElementsByTagName("head")[0].appendChild(metaDesc);
+      }
+      metaDesc.content = branding.seoDescription;
+    }
+
+    if (branding?.seoKeywords) {
+      let metaKey: HTMLMetaElement | null = document.querySelector("meta[name='keywords']");
+      if (!metaKey) {
+        metaKey = document.createElement("meta");
+        metaKey.name = "keywords";
+        document.getElementsByTagName("head")[0].appendChild(metaKey);
+      }
+      metaKey.content = branding.seoKeywords;
     }
   }, [branding]);
 
@@ -344,6 +366,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <BrandingSync />
+      <GlobalLoader />
       <ScrollToTop />
       <Toaster 
         position="top-right" 
@@ -381,6 +404,7 @@ export default function App() {
             <Route path="privacy" element={<PrivacyPolicyPage />} />
             <Route path="about" element={<AboutUsPage />} />
             <Route path="contact" element={<ContactUsPage />} />
+            <Route path="socials" element={<SocialsPage />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Route>
 
