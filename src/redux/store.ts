@@ -74,13 +74,44 @@ export function extractDetailedErrorMessage(payload: any, status?: number | stri
  * Global RTK Query middleware.
  * Automatically displays error toast on failures and manages global loading state.
  */
-export const rtkQueryGlobalMiddleware: Middleware = ({ dispatch }) => (next) => (action: any) => {
+const loadingRequestIds = new Set<string>();
+
+export const rtkQueryGlobalMiddleware: Middleware = ({ dispatch, getState }) => (next) => (action: any) => {
   // Track loading state for RTK Query endpoints
   if (action.type && typeof action.type === "string") {
     if (action.type.endsWith("/pending")) {
-      dispatch(incrementLoading());
+      let shouldShowLoader = true;
+
+      // If it's a query and data is already present, don't show the global loader (avoids flashes on refetches)
+      if (action.meta?.arg?.type === "query") {
+        const { queryCacheKey, endpointName } = action.meta.arg;
+        
+        if (endpointName === "getConfig") {
+          shouldShowLoader = false;
+        } else {
+          const reducerPath = action.type.split('/')[0];
+          const apiState = (getState() as any)[reducerPath];
+          const existingQuery = apiState?.queries?.[queryCacheKey];
+          
+          if (existingQuery?.data !== undefined || existingQuery?.status === "fulfilled") {
+            shouldShowLoader = false;
+          }
+        }
+      }
+
+      if (shouldShowLoader) {
+        if (action.meta?.requestId) {
+          loadingRequestIds.add(action.meta.requestId);
+        }
+        dispatch(incrementLoading());
+      }
     } else if (action.type.endsWith("/fulfilled") || action.type.endsWith("/rejected")) {
-      dispatch(decrementLoading());
+      if (action.meta?.requestId) {
+        if (loadingRequestIds.has(action.meta.requestId)) {
+          loadingRequestIds.delete(action.meta.requestId);
+          dispatch(decrementLoading());
+        }
+      }
     }
   }
 

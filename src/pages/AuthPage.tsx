@@ -556,7 +556,14 @@ export default function AuthPage({ onLoginSuccess, onBackToLanding }: AuthPagePr
                           : "text-amber-500 hover:text-amber-400 hover:underline cursor-pointer"
                       }`}
                     >
-                      {isResending ? "Resending..." : "Resend OTP Code"}
+                      {isResending ? (
+                        <span className="flex items-center gap-1.5">
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Resending...
+                        </span>
+                      ) : (
+                        "Resend OTP Code"
+                      )}
                     </button>
                   </div>
 
