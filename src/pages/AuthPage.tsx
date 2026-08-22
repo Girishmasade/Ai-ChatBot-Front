@@ -183,6 +183,8 @@ export default function AuthPage({ onLoginSuccess, onBackToLanding }: AuthPagePr
     if (timer > 0 || isResending) return;
 
     setErrorMessage("");
+    setSuccessMessage("");
+
     try {
       const result = await resendOtpMutation({ email }).unwrap();
       if (result.success) {
