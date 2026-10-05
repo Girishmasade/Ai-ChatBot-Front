@@ -374,6 +374,21 @@ export default function App() {
       } else if (reason?.message && typeof reason.message === "string") {
         message = reason.message;
       }
+
+      // If a dynamic chunk failed to load (e.g. user had old version open during a new deploy)
+      if (
+        message.includes("Failed to fetch dynamically imported module") ||
+        message.includes("error loading dynamically imported module")
+      ) {
+        const lastReload = sessionStorage.getItem("chunk_unhandled_reload");
+        const now = Date.now();
+        if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+          sessionStorage.setItem("chunk_unhandled_reload", now.toString());
+          window.location.reload();
+          return;
+        }
+      }
+
       if (!message.includes("ResizeObserver") && !message.includes("canceled") && !message.includes("Aborted")) {
         toast.error(message, { id: `unhandled-${message}` });
       }
