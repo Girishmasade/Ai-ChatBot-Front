@@ -416,7 +416,7 @@ export default function AppSidebar({
 
         <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl">
           <div className="relative">
-            <div className="w-8.5 h-8.5 rounded-lg bg-[#1D1D1D] border border-amber-500/20 flex items-center justify-center overflow-hidden">
+            <div className={`w-8.5 h-8.5 rounded-lg bg-[#1D1D1D] border ${currentUser.isPaid ? "border-amber-500 shadow-md shadow-amber-500/20" : "border-amber-500/20"} flex items-center justify-center overflow-hidden`}>
               <span className="text-xs font-bold text-amber-500 uppercase">
                 {currentUser.name[0]}
               </span>
@@ -425,9 +425,22 @@ export default function AppSidebar({
           </div>
           <div className="flex-1 min-w-0 text-left">
             <h4 className="text-xs font-semibold text-white truncate">{currentUser.name}</h4>
-            <p className="text-[9px] text-[#71717A] truncate uppercase font-semibold tracking-wider">
-              {currentUser.tier} tier
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p
+                className={`text-[9px] truncate uppercase font-semibold tracking-wider ${
+                  currentUser.isPaid
+                    ? "text-amber-400 font-bold"
+                    : "text-[#71717A]"
+                }`}
+              >
+                {currentUser.isPaid ? "PAID TIER" : "FREE TIER"}
+              </p>
+              {currentUser.isPaid && currentUser.planName && (
+                <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-[8px] font-bold text-amber-400 uppercase tracking-tight">
+                  {currentUser.planName}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

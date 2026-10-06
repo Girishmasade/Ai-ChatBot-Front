@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { CreditCard, Check, Zap, Sparkles, Award, HelpCircle, RefreshCw } from "lucide-react";
+import toast from "react-hot-toast";
 import CommonModal from "../components/CommonModal";
 import {
   useGetSubscriptionPlansQuery,
+  useGetMySubscriptionQuery,
   useCreateUserSubscriptionMutation,
 } from "../redux/api/subscriptionApi";
 import {
@@ -10,6 +12,7 @@ import {
   useVerifyPaymentMutation,
 } from "../redux/api/paymentApi";
 import { useGetActiveTokenPackagesQuery } from "../redux/api/tokenApi";
+import { useAuth } from "../hooks/useAuth";
 
 interface SubscriptionPageProps {
   onUpgrade: (tier: "free" | "basic" | "pro" | "enterprise", credits: number) => void;
@@ -17,13 +20,17 @@ interface SubscriptionPageProps {
 
 export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-
+  const { currentUser, refreshCredits } = useAuth();
 
   // Fetch real subscription plans from backend
   const { data: plansResponse, isLoading: plansLoading } = useGetSubscriptionPlansQuery();
+  const { data: mySubData, refetch: refetchSubscription } = useGetMySubscriptionQuery();
   const [createSubscription, { isLoading: isSubscribing }] = useCreateUserSubscriptionMutation();
 
   const backendPlans = plansResponse?.data?.subscriptionPlan || [];
+  const activePlan = mySubData?.data?.plan;
+  const activePlanId = activePlan?._id || currentUser?.activePlanId;
+  const isUserPaid = mySubData?.data?.isPaid ?? currentUser?.isPaid ?? false;
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [verifyPayment, { isLoading: isVerifying }] = useVerifyPaymentMutation();
@@ -48,7 +55,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
           amount: orderRes.data.amount,
           currency: orderRes.data.currency,
           name: "GoChat AI Studio",
-          description: `Subscription: ${tier}`,
+          description: `Subscription: ${tier} (${price})`,
           order_id: orderRes.data.orderId,
           handler: async function (response: any) {
             try {
@@ -59,10 +66,26 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
                 razorpay_signature: response.razorpay_signature,
               }).unwrap();
               
-              alert("🎉 Payment Successful! Subscription activated & Official Invoice sent to your registered Gmail address.");
-            } catch (verErr) {
+              // Refresh subscription and wallet state immediately
+              refetchSubscription();
+              refreshCredits();
+
+              toast.success(
+                `🎉 Payment Successful! ${tier} plan (${price}) activated & Official Invoice sent to your registered Gmail address.`,
+                {
+                  duration: 6000,
+                  icon: "🎉",
+                  style: {
+                    borderRadius: "12px",
+                    background: "#18181b",
+                    color: "#fff",
+                    border: "1px solid rgba(245, 158, 11, 0.4)",
+                  },
+                }
+              );
+            } catch (verErr: any) {
               console.error("Payment verification failed:", verErr);
-              alert("Payment verification failed. Please contact support.");
+              toast.error(verErr?.data?.message || "Payment verification failed. Please contact support.");
             }
           },
           theme: {
@@ -75,7 +98,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
 
       } catch (err: any) {
         console.error("Subscription order creation failed:", err);
-        alert(err?.data?.message || "Failed to create Razorpay payment order.");
+        toast.error(err?.data?.message || "Failed to create Razorpay payment order.");
       }
       return;
     }
@@ -111,10 +134,25 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             }).unwrap();
-            alert("🎉 Tokens purchased successfully! Invoice sent to your registered Gmail address.");
-          } catch (verErr) {
+
+            refreshCredits();
+
+            toast.success(
+              `🎉 Tokens purchased successfully! Invoice sent to your registered Gmail address.`,
+              {
+                duration: 6000,
+                icon: "⚡",
+                style: {
+                  borderRadius: "12px",
+                  background: "#18181b",
+                  color: "#fff",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                },
+              }
+            );
+          } catch (verErr: any) {
             console.error("Payment verification failed:", verErr);
-            alert("Payment verification failed. Please contact support.");
+            toast.error(verErr?.data?.message || "Payment verification failed. Please contact support.");
           }
         },
         theme: { color: "#f59e0b" },
@@ -124,7 +162,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
       rzp.open();
     } catch (err: any) {
       console.error("Token order creation failed:", err);
-      alert(err?.data?.message || "Failed to create Razorpay order for tokens.");
+      toast.error(err?.data?.message || "Failed to create Razorpay order for tokens.");
     }
   };
 
@@ -193,19 +231,38 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
 
   // If backend has real plans, build cards from them; otherwise use fallback
   const plans = backendPlans.length > 0
-    ? backendPlans.map((bp, i) => ({
-        name: bp.name,
-        price: `₹${bp.price}`,
-        period: bp.durationInDays ? `/${bp.durationInDays}d` : "/month",
-        description: bp.description,
-        credits: `${bp.tokens || 0} tokens`,
-        features: bp.services.slice(0, 4),
-        featured: i === 1,
-        buttonText: bp.price === 0 ? "Current Plan" : `Subscribe to ${bp.name}`,
-        planId: bp._id,
-        priceValue: bp.price,
-      }))
-    : fallbackPlans.map((p) => ({ ...p, planId: undefined as string | undefined, priceValue: 0 }));
+    ? backendPlans.map((bp, i) => {
+        // Determine if this is the user's active/current plan:
+        // 1. If activePlanId matches this plan's ID
+        // 2. OR if user is not paid and this is the free plan (price === 0)
+        const isCurrentPlan = activePlanId
+          ? bp._id === activePlanId
+          : (!isUserPaid && bp.price === 0);
+
+        return {
+          name: bp.name,
+          price: `₹${bp.price}`,
+          period: bp.durationInDays ? `/${bp.durationInDays}d` : "/month",
+          description: bp.description,
+          credits: `${bp.tokens || 0} tokens`,
+          features: bp.services.slice(0, 4),
+          featured: i === 1,
+          isCurrentPlan,
+          buttonText: isCurrentPlan ? "Current Plan" : `Subscribe to ${bp.name}`,
+          planId: bp._id,
+          priceValue: bp.price,
+        };
+      })
+    : fallbackPlans.map((p) => {
+        const isCurrentPlan = !isUserPaid && p.price === "₹0";
+        return {
+          ...p,
+          planId: undefined as string | undefined,
+          priceValue: 0,
+          isCurrentPlan,
+          buttonText: isCurrentPlan ? "Current Plan" : p.buttonText,
+        };
+      });
 
   return (
     <div className="space-y-8  p-1 text-left">
@@ -251,17 +308,23 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
           <div
             key={i}
             className={`bg-[#111111] border rounded-2xl p-5 flex flex-col justify-between space-y-6 relative transition duration-300 ${
-              plan.featured
+              plan.isCurrentPlan
+                ? "border-emerald-500/60 shadow-2xl shadow-emerald-500/[0.08]"
+                : plan.featured
                 ? "border-amber-500 shadow-2xl shadow-amber-500/[0.06] bg-[#111111]"
                 : "border-[#242424] hover:border-zinc-800"
             }`}
           >
-            {/* Featured top badge */}
-            {plan.featured && (
+            {/* Top badge */}
+            {plan.isCurrentPlan ? (
+              <span className="absolute top-0 right-6 -translate-y-1/2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-lg shadow-emerald-500/10">
+                <Check className="w-2.5 h-2.5" /> Current Plan
+              </span>
+            ) : plan.featured ? (
               <span className="absolute top-0 right-6 -translate-y-1/2 px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider shadow-lg shadow-amber-500/15">
                 Most Popular
               </span>
-            )}
+            ) : null}
 
             <div className="space-y-4">
               {/* Header */}
@@ -296,7 +359,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
             <button
               onClick={() => {
                 const p = plan as any;
-                if (p.price !== "₹0") {
+                if (!p.isCurrentPlan && p.priceValue > 0) {
                   handleDirectUpgrade(
                     plan.name,
                     `${plan.price}${plan.period || ""}`,
@@ -305,16 +368,23 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
                   );
                 }
               }}
-              disabled={plan.price === "₹0"}
-              className={`w-full py-2.5 rounded-xl text-xs font-bold transition duration-200 ${
-                plan.price === "₹0"
-                  ? "bg-[#18181B] border border-transparent text-zinc-500 cursor-default"
+              disabled={plan.isCurrentPlan || (!plan.isCurrentPlan && (plan as any).priceValue === 0 && isUserPaid)}
+              className={`w-full py-2.5 rounded-xl text-xs font-bold transition duration-200 flex items-center justify-center gap-1.5 ${
+                plan.isCurrentPlan
+                  ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 cursor-default"
+                  : (!plan.isCurrentPlan && (plan as any).priceValue === 0 && isUserPaid)
+                  ? "bg-[#18181B] border border-transparent text-zinc-600 cursor-not-allowed"
                   : plan.featured
-                  ? "bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/15"
-                  : "bg-[#1A1A1A] border border-[#242424] text-zinc-300 hover:text-white hover:bg-zinc-900"
+                  ? "bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/15 cursor-pointer"
+                  : "bg-[#1A1A1A] border border-[#242424] text-zinc-300 hover:text-white hover:bg-zinc-900 cursor-pointer"
               }`}
             >
-              {plan.buttonText}
+              {plan.isCurrentPlan && <Check className="w-3.5 h-3.5" />}
+              {plan.isCurrentPlan
+                ? "Current Plan"
+                : (!plan.isCurrentPlan && (plan as any).priceValue === 0 && isUserPaid)
+                ? "Free Plan"
+                : plan.buttonText}
             </button>
           </div>
         ))}

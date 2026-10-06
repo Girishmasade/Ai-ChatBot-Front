@@ -24,7 +24,10 @@ export interface User {
   name: string;
   email: string;
   role: "User" | "Administrator" | "Developer" | "admin" | "user";
-  tier: "free" | "basic" | "pro" | "enterprise";
+  tier: "free" | "basic" | "pro" | "enterprise" | "paid";
+  isPaid?: boolean;
+  activePlanId?: string;
+  planName?: string;
   credits: number;
   joined: string;
   status: "active" | "suspended";
@@ -184,3 +187,13 @@ export interface TokenPackage {
   isActive: boolean;
   description?: string;
 }
+
+/** Active subscription response for current user */
+export interface MySubscriptionResponse {
+  hasActiveSubscription: boolean;
+  isPaid: boolean;
+  tier: "free" | "paid" | "basic" | "pro" | "enterprise";
+  plan: SubscriptionPlan | null;
+  subscription: UserSubscription | null;
+}
+

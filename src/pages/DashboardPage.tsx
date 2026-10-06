@@ -124,8 +124,9 @@ export default function DashboardPage({
     };
   }, [assets]);
 
-  const PLAN_MAX_CREDITS = {
+  const PLAN_MAX_CREDITS: Record<string, number> = {
     free: 100,
+    paid: 5000,
     basic: 1000,
     pro: 5000,
     enterprise: 100000
@@ -136,7 +137,11 @@ export default function DashboardPage({
   const totalCredits = PLAN_MAX_CREDITS[currentUser.tier] || 5000;
   const usedCredits = Math.max(0, totalCredits - displayCredits);
   const percentageUsed = Math.min(100, Math.round((usedCredits / totalCredits) * 100));
-  const planName = currentUser.tier ? currentUser.tier.charAt(0).toUpperCase() + currentUser.tier.slice(1) + " Plan" : "Free Plan";
+  const planName = currentUser.isPaid
+    ? (currentUser.planName ? `${currentUser.planName} Plan` : "Paid Plan")
+    : currentUser.tier
+    ? currentUser.tier.charAt(0).toUpperCase() + currentUser.tier.slice(1) + " Plan"
+    : "Free Plan";
 
   return (
     <div className="space-y-6 p-1 text-left">
