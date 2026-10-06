@@ -107,7 +107,7 @@ export default function ProfilePage({ currentUser, onUpdateName }: ProfilePagePr
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Current Avatar</label>
               <div className="w-16 h-16 rounded-xl overflow-hidden border border-[#242424]">
-                <img src={displayAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={displayAvatar} alt="Avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               </div>
             </div>
           )}

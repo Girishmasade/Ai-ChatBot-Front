@@ -118,6 +118,7 @@ export interface AuthUser {
 /** Returned by verifyOtp on success */
 export interface VerifyOtpResponse {
   accessToken: string;
+  refreshToken?: string;
   user: AuthUser;
 }
 
@@ -177,15 +178,22 @@ export interface UserSubscription {
   updatedAt: string;
 }
 
-/** Token package (purchasable credit bundles) */
+/** Token package (purchasable credit bundles, e.g. Starter Pack) */
 export interface TokenPackage {
   _id: string;
+  id?: string;
   name: string;
-  tokens: number;
+  tokens?: number;
+  tokenAmount: number;
   price: number;
-  currency: string;
-  isActive: boolean;
+  currency?: string;
+  status?: "active" | "inactive" | string;
+  isActive?: boolean;
+  isPopular?: boolean;
+  sortOrder?: number;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Active subscription response for current user */

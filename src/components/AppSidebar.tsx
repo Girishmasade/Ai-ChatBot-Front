@@ -435,8 +435,8 @@ export default function AppSidebar({
               >
                 {currentUser.isPaid ? "PAID TIER" : "FREE TIER"}
               </p>
-              {currentUser.isPaid && currentUser.planName && (
-                <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-[8px] font-bold text-amber-400 uppercase tracking-tight">
+              {currentUser.isPaid && currentUser.planName && !currentUser.planName.toLowerCase().includes("free") && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[8px] font-bold text-amber-400 uppercase tracking-tight">
                   {currentUser.planName}
                 </span>
               )}

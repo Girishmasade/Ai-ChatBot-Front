@@ -24,12 +24,14 @@ import { PrivateRoute } from "./secure/PrivateRoute";
 import { AdminRoute } from "./secure/AdminRoute";
 import { PublicRoute } from "./secure/PublicRoute";
 
-// Core Components (Eagerly Loaded)
+// Core Components
 import AppSidebar from "./components/AppSidebar";
 import AppTopBar from "./components/AppTopBar";
-import CookieBanner from "./components/CookieBanner";
-import AppFooter from "./components/AppFooter";
 import GlobalLoader from "./components/GlobalLoader";
+
+// Lazy-loaded auxiliary components
+const CookieBanner = React.lazy(() => import("./components/CookieBanner"));
+const AppFooter = React.lazy(() => import("./components/AppFooter"));
 
 // Lazy-loaded Main Pages
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -185,8 +187,6 @@ function LoginRoute() {
   );
 }
 
-import { initSocket } from "./services/socketService";
-
 // ------------------------------------------------------------------
 //  WORKSPACE SHELL (Layout)
 // ------------------------------------------------------------------
@@ -202,7 +202,9 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
 
   useEffect(() => {
     if (currentUser?.id) {
-      initSocket(currentUser.id);
+      import("./services/socketService").then(({ initSocket }) => {
+        initSocket(currentUser.id);
+      });
     }
   }, [currentUser?.id]);
 
@@ -269,7 +271,11 @@ function WorkspaceShell({ isAdminSection }: { isAdminSection: boolean }) {
                       {outlet}
                     </Suspense>
                   </div>
-                  {!isAdminSection && activeScreen !== "chat" && <AppFooter setActiveScreen={goToScreen} activeScreen={activeScreen} />}
+                  {!isAdminSection && activeScreen !== "chat" && (
+                    <Suspense fallback={null}>
+                      <AppFooter setActiveScreen={goToScreen} activeScreen={activeScreen} />
+                    </Suspense>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -414,7 +420,9 @@ export default function App() {
           }
         }} 
       />
-      <CookieBanner />
+      <Suspense fallback={null}>
+        <CookieBanner />
+      </Suspense>
 
       <Suspense fallback={<PageLoader />}>
         <Routes>

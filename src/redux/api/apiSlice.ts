@@ -18,15 +18,19 @@ const baseQuery = fetchBaseQuery({
   credentials: "include",
   prepareHeaders: (headers, { getState }) => {
     let token = (getState() as RootState)?.auth?.accessToken;
+    let refreshToken = (getState() as RootState)?.auth?.refreshToken;
     if (!token) {
       try {
         const raw = localStorage.getItem("gochat_auth");
         if (raw) {
-          token = JSON.parse(raw).accessToken;
+          const parsed = JSON.parse(raw);
+          token = parsed.accessToken;
+          refreshToken = parsed.refreshToken;
         }
       } catch (e) {}
     }
     if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (refreshToken) headers.set("x-refresh-token", refreshToken);
     return headers;
   },
 });
@@ -42,21 +46,36 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
     }
   }
 
-  // On 401, retry the request once — the backend silentRefresh middleware
-  // will use the httpOnly refresh cookie to issue a fresh access token
+  // On 401, re-authenticate using refresh token and retry
   if (result.error && result.error.status === 401) {
-    // Retry the same request (cookies are sent automatically with credentials: "include")
+    const refreshResult = await baseQuery(
+      { url: "/auth/refresh-token", method: "POST" },
+      api,
+      extraOptions
+    );
+
+    const refreshedToken =
+      refreshResult.meta?.response?.headers.get("x-access-token") ||
+      (refreshResult.data as any)?.data?.accessToken ||
+      (refreshResult.data as any)?.accessToken;
+
+    if (refreshedToken) {
+      api.dispatch(updateAccessToken(refreshedToken));
+      // Retry original request with the fresh token
+      return await baseQuery(args, api, extraOptions);
+    }
+
+    // Fallback retry
     const retryResult = await baseQuery(args, api, extraOptions);
 
     if (retryResult.meta?.response) {
-      const refreshedToken = retryResult.meta.response.headers.get("x-access-token");
-      if (refreshedToken) {
-        api.dispatch(updateAccessToken(refreshedToken));
+      const headerToken = retryResult.meta.response.headers.get("x-access-token");
+      if (headerToken) {
+        api.dispatch(updateAccessToken(headerToken));
       }
     }
 
     if (retryResult.error && retryResult.error.status === 401) {
-      // Both access and refresh tokens are dead — force logout
       api.dispatch(logout());
     }
 

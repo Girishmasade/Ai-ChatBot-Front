@@ -19,7 +19,6 @@ interface SubscriptionPageProps {
 }
 
 export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const { currentUser, refreshCredits } = useAuth();
 
   // Fetch real subscription plans from backend
@@ -27,7 +26,20 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
   const { data: mySubData, refetch: refetchSubscription } = useGetMySubscriptionQuery();
   const [createSubscription, { isLoading: isSubscribing }] = useCreateUserSubscriptionMutation();
 
-  const backendPlans = plansResponse?.data?.subscriptionPlan || [];
+  const rawBackendPlans = plansResponse?.data?.subscriptionPlan || [];
+  // Ensure strictly unique plans, and at most one free plan (price === 0)
+  const backendPlans = React.useMemo(() => {
+    let seenFree = false;
+    return rawBackendPlans.filter((p: any) => {
+      const isFree = p.price === 0 || p.plan?.toLowerCase() === "free" || p.name?.toLowerCase().includes("free");
+      if (isFree) {
+        if (seenFree) return false;
+        seenFree = true;
+      }
+      return true;
+    });
+  }, [rawBackendPlans]);
+
   const activePlan = mySubData?.data?.plan;
   const activePlanId = activePlan?._id || currentUser?.activePlanId;
   const isUserPaid = mySubData?.data?.isPaid ?? currentUser?.isPaid ?? false;
@@ -35,9 +47,9 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [verifyPayment, { isLoading: isVerifying }] = useVerifyPaymentMutation();
   
-  // Fetch active token packages for top-ups
+  // Fetch active token packages for top-ups (e.g. Starter Pack from database)
   const { data: tokenPackagesRes, isLoading: packagesLoading } = useGetActiveTokenPackagesQuery();
-  const tokenPackages = tokenPackagesRes?.data?.packages || [];
+  const tokenPackages = tokenPackagesRes?.data?.packages || (tokenPackagesRes?.data as any)?.cache || [];
 
   const handleDirectUpgrade = async (tier: string, price: string, credits: number, planId?: string) => {
     // If we have a real backend plan ID, use the real API with Razorpay
@@ -184,7 +196,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
     },
     {
       name: "Basic Developer",
-      price: billingCycle === "monthly" ? "₹499" : "₹399",
+      price: "₹499",
       period: "/month",
       description: "Great for building individual prototypes",
       credits: "500 credits / month",
@@ -199,7 +211,7 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
     },
     {
       name: "Pro Unlimited",
-      price: billingCycle === "monthly" ? "₹1,499" : "₹1,199",
+      price: "₹1,499",
       period: "/month",
       description: "The premium standard for elite creators",
       credits: "1,500 credits / month",
@@ -231,13 +243,14 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
 
   // If backend has real plans, build cards from them; otherwise use fallback
   const plans = backendPlans.length > 0
-    ? backendPlans.map((bp, i) => {
-        // Determine if this is the user's active/current plan:
-        // 1. If activePlanId matches this plan's ID
-        // 2. OR if user is not paid and this is the free plan (price === 0)
-        const isCurrentPlan = activePlanId
-          ? bp._id === activePlanId
-          : (!isUserPaid && bp.price === 0);
+    ? backendPlans.map((bp: any, i: number) => {
+        const isFreePlan = bp.price === 0 || bp.plan?.toLowerCase() === "free" || bp.name?.toLowerCase().includes("free");
+        
+        // Free user (!isUserPaid) -> Free plan (price === 0) is their current plan
+        // Paid user (isUserPaid) -> Only bp._id === activePlanId is their current plan
+        const isCurrentPlan = isUserPaid
+          ? (activePlanId ? bp._id === activePlanId : false)
+          : isFreePlan;
 
         return {
           name: bp.name,
@@ -245,8 +258,9 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
           period: bp.durationInDays ? `/${bp.durationInDays}d` : "/month",
           description: bp.description,
           credits: `${bp.tokens || 0} tokens`,
-          features: bp.services.slice(0, 4),
-          featured: i === 1,
+          features: bp.services?.slice(0, 4) || [],
+          // Never mark free plan as "Most Popular"
+          featured: !isFreePlan && (bp.name?.toLowerCase().includes("monthly") || bp.name?.toLowerCase().includes("popular") || (backendPlans.length > 2 ? i === 2 : i === 1)),
           isCurrentPlan,
           buttonText: isCurrentPlan ? "Current Plan" : `Subscribe to ${bp.name}`,
           planId: bp._id,
@@ -282,26 +296,6 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
           </p>
         </div>
       </div>
-
-      {/* Monthly vs Yearly toggle */}
-      <div className="flex items-center justify-center gap-3">
-        <span className="text-xs text-zinc-400 font-medium">Monthly billing</span>
-        <button
-          id="billing-toggle-btn"
-          onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-          className="w-12 h-6 rounded-full bg-[#1A1A1A] border border-[#242424] p-0.5 transition duration-300 flex items-center relative"
-        >
-          <div
-            className={`w-4.5 h-4.5 rounded-full bg-amber-500 shadow-md shadow-amber-500/30 transition duration-300 absolute ${
-              billingCycle === "yearly" ? "right-1" : "left-1"
-            }`}
-          />
-        </button>
-        <span className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
-          Yearly billing <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[9px] text-amber-500 font-bold uppercase tracking-wider">Save 20%</span>
-        </span>
-      </div>
-
       {/* Grid of Plans */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {plans.map((plan, i) => (
@@ -390,42 +384,60 @@ export default function SubscriptionPage({ onUpgrade }: SubscriptionPageProps) {
         ))}
       </div>
 
-      {/* Token Packages Section */}
+      {/* Token Packages Section (Managed by Admin from MongoDB) */}
       {tokenPackages.length > 0 && (
         <div className="mt-12 space-y-6">
           <div className="flex flex-col items-center justify-center text-center space-y-2 mb-8">
             <h3 className="text-lg md:text-xl font-bold text-white tracking-tight">
-              One-Time Token Top-Ups
+              One-Time Token Top-Ups & Starter Packs
             </h3>
             <p className="text-xs text-zinc-400 max-w-md">
-              Need more tokens but don't want to change your subscription? Purchase unexpiring tokens a la carte.
+              Need more tokens but don't want to change your subscription? Purchase instant tokens a la carte from our database offerings.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tokenPackages.map((pkg: any) => (
               <div
                 key={pkg._id}
-                className="bg-[#111111] border border-[#242424] rounded-2xl p-5 flex flex-col justify-between space-y-5 hover:border-amber-500/50 transition"
+                className={`bg-[#111111] border rounded-2xl p-5 flex flex-col justify-between space-y-5 transition relative ${
+                  pkg.isPopular
+                    ? "border-amber-500 shadow-xl shadow-amber-500/[0.08]"
+                    : "border-[#242424] hover:border-amber-500/50"
+                }`}
               >
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">{pkg.name}</h4>
-                  <p className="text-[11px] text-zinc-500">{pkg.description}</p>
+                {/* Popular or Starter Pack badge */}
+                {pkg.isPopular && (
+                  <span className="absolute top-0 right-6 -translate-y-1/2 px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider shadow-lg shadow-amber-500/15">
+                    Popular Top-Up
+                  </span>
+                )}
+
+                <div className="space-y-1 text-left">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    {pkg.name}
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">{pkg.description || "Instant token credit bundle"}</p>
                 </div>
                 
                 <div className="flex items-baseline gap-1 py-2 border-y border-[#1F1F1F]">
                   <span className="text-2xl font-bold text-white font-numbers">₹{pkg.price}</span>
+                  <span className="text-[10px] text-zinc-500">/one-time</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-bold bg-amber-500/10 text-amber-500 px-3 py-1.5 rounded-lg w-fit">
+                <div className="flex items-center gap-2 text-[11px] font-bold bg-amber-500/10 text-amber-500 px-3 py-1.5 rounded-lg w-fit">
                   <Zap className="w-3.5 h-3.5" />
-                  {pkg.tokenAmount.toLocaleString()} Tokens
+                  {(pkg.tokenAmount || 0).toLocaleString()} Tokens
                 </div>
 
                 <button
                   onClick={() => handleTokenPurchase(pkg._id, pkg.name)}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#1A1A1A] border border-[#242424] text-zinc-300 hover:text-white hover:border-amber-500/50 hover:bg-amber-500/10 transition duration-200"
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition duration-200 cursor-pointer ${
+                    pkg.isPopular
+                      ? "bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/15"
+                      : "bg-[#1A1A1A] border border-[#242424] text-zinc-300 hover:text-white hover:border-amber-500/50 hover:bg-amber-500/10"
+                  }`}
                 >
-                  Buy Now
+                  Buy {pkg.name}
                 </button>
               </div>
             ))}

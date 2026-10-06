@@ -129,8 +129,8 @@ export function useAuth() {
 
   /** Manually set credentials (e.g. from OAuth callback) */
   const setAuth = useCallback(
-    (accessToken: string, user: AuthUser) => {
-      dispatch(setCredentials({ accessToken, user }));
+    (accessToken: string, user: AuthUser, refreshToken?: string) => {
+      dispatch(setCredentials({ accessToken, user, refreshToken }));
     },
     [dispatch]
   );
