@@ -33,6 +33,8 @@ import {
 import { User, SystemModel, SubscriptionRecord, AuditLog, CookieConsent, BrandingConfig } from "../types";
 import CommonModal from "../components/CommonModal";
 import ConfirmModal from "../components/ConfirmModal";
+import AdminPrivacyTab from "../components/admin/AdminPrivacyTab";
+import AdminTermsTab from "../components/admin/AdminTermsTab";
 import { getStoredSocialLinks, saveSocialLinks, PLATFORM_ICONS, SocialLinkItem } from "../helpers/socialLinks";
 import {
   useGetDashboardStatsQuery,
@@ -1521,6 +1523,12 @@ export default function AdminPage({ activeTab, setActiveTab }: AdminPageProps) {
           </div>
         </div>
       )}
+
+      {/* PRIVACY POLICY CMS TAB */}
+      {activeTab === "privacy" && <AdminPrivacyTab />}
+
+      {/* TERMS & CONDITIONS CMS TAB */}
+      {activeTab === "terms" && <AdminTermsTab />}
 
       {/* 7. BRANDING CMS TAB */}
       {activeTab === "branding" && (

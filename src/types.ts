@@ -205,3 +205,83 @@ export interface MySubscriptionResponse {
   subscription: UserSubscription | null;
 }
 
+export interface PolicyImage {
+  url: string;
+  publicId?: string;
+  caption?: string;
+}
+
+export interface PrivacySection {
+  _id?: string;
+  title: string;
+  content: string;
+  order: number;
+  icon?: string;
+  image?: PolicyImage;
+}
+
+export interface ThirdPartyProcessor {
+  name: string;
+  purpose: string;
+  privacyPolicyUrl?: string;
+}
+
+export interface PrivacyPolicy {
+  _id: string;
+  title: string;
+  slug: string;
+  version: string;
+  summary: string;
+  content?: string;
+  status: "draft" | "published" | "archived";
+  isCurrent: boolean;
+  effectiveDate: string;
+  lastUpdated: string;
+  bannerImage?: PolicyImage;
+  sections: PrivacySection[];
+  thirdPartyProcessors?: ThirdPartyProcessor[];
+  userRights?: string[];
+  securityMeasures?: string[];
+  contactEmail: string;
+  retentionPeriod?: string;
+  cookiePolicySummary?: string;
+  changelog?: string;
+  createdBy?: any;
+  updatedBy?: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TermsSection {
+  _id?: string;
+  title: string;
+  content: string;
+  order: number;
+  icon?: string;
+  image?: PolicyImage;
+}
+
+export interface TermsAndCondition {
+  _id: string;
+  title: string;
+  slug: string;
+  version: string;
+  summary: string;
+  content?: string;
+  status: "draft" | "published" | "archived";
+  isCurrent: boolean;
+  effectiveDate: string;
+  lastUpdated: string;
+  bannerImage?: PolicyImage;
+  sections: TermsSection[];
+  keyHighlights?: string[];
+  prohibitedActivities?: string[];
+  governingLaw?: string;
+  contactEmail: string;
+  changelog?: string;
+  createdBy?: any;
+  updatedBy?: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

@@ -129,8 +129,8 @@ export default function LandingPage({ onEnterApp, setActiveScreen }: LandingPage
             />
           ) : (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                <Sparkles className="w-4 h-4 text-black" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/15 to-amber-950/40 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/25 p-1 overflow-hidden">
+                <img src={branding?.favicon || "/faviconGochat.png"} alt="GoChat Logo" className="w-full h-full object-contain" />
               </div>
               <span className="text-sm font-bold tracking-wider text-white font-mono">
                 {branding?.appName || "GoChat AI"}

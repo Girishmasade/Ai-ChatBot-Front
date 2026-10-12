@@ -81,8 +81,12 @@ export default function AuthPage({ onBackToLanding }: AuthPageProps) {
                 className="h-9 max-w-[140px] object-contain"
               />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <span className="text-black font-black text-sm tracking-tighter">GC</span>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/15 to-amber-950/40 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/20 p-1 overflow-hidden">
+                <img
+                  src={branding?.favicon || "/faviconGochat.png"}
+                  alt={branding?.appName || "GoChat AI"}
+                  className="w-full h-full object-contain"
+                />
               </div>
             )}
           </div>

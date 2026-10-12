@@ -65,8 +65,8 @@ export default function AppFooter({ setActiveScreen, activeScreen }: AppFooterPr
                 <img src={branding.mainLogo} alt={branding.appName || "Logo"} className="h-10 w-auto object-contain" crossOrigin="anonymous" />
               ) : (
                 <>
-                  <div className="w-10 h-10 rounded-full bg-[#F59E0B] flex items-center justify-center font-bold text-black text-lg shadow-lg shadow-amber-500/10 shrink-0">
-                    {branding?.appName ? branding.appName.charAt(0).toUpperCase() : "G"}
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/15 to-amber-950/40 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10 p-1.5 shrink-0 overflow-hidden">
+                    <img src={branding?.favicon || "/faviconGochat.png"} alt={branding?.appName || "GoChat AI"} className="w-full h-full object-contain" />
                   </div>
                   <span className="text-xl font-bold text-white tracking-tight">{branding?.appName || "GoChat AI"}</span>
                 </>
